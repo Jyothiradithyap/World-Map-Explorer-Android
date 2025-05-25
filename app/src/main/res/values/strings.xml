@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">worldmap</string>
+    <string name="app_name">World-Map-Explorer</string>
+    <string name="accessibility_service_label">World-Map-Explorer Accessiblity Service</string>
+    <string name="accessibility_service_description">World-Map-Explorer Accessiblity Service</string>
 </resources>

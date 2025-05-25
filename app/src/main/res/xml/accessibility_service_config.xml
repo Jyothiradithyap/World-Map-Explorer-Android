@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/accessibility_service_description"
+    android:packageNames="com.example.worldmap"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackSpoken|feedbackAudible|feedbackGeneric|feedbackHaptic"
+    android:accessibilityFlags="flagDefault"
+    android:canRequestTouchExplorationMode="true"
+    android:canRetrieveWindowContent="true"
+    android:canRequestFingerprintGestures="true"
+    android:notificationTimeout="100"
+    android:settingsActivity="com.example.android.accessibility.ServiceSettingsActivity"/>
