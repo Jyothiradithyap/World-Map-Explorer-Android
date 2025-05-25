@@ -7,7 +7,7 @@ import android.provider.Settings;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Toast;
 
-public class AccessibilityUtilities {
+public class AccessibilityUtils {
     public boolean isSystemExploreByTouchEnabled(Context context){
         AccessibilityManager accessibilityManager=(AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
         if(accessibilityManager != null){

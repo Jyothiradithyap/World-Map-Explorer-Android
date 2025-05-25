@@ -2,11 +2,14 @@
 
 package com.example.worldmap;
 
+import android.content.Context;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.os.Handler;
 import android.view.ViewConfiguration;
+
+import java.util.HashMap;
 
 public class GestureListener extends GestureDetector.SimpleOnGestureListener implements View.OnTouchListener {
 
@@ -15,15 +18,33 @@ public class GestureListener extends GestureDetector.SimpleOnGestureListener imp
         SWIPE_RIGHT,
         SWIPE_UP,
         SWIPE_DOWN,
+        SINGLE_TAP,
         DOUBLE_TAP,
         TRIPLE_TAP,
-        LONG_PRESS
+        LONG_PRESS,
+        TWO_FINGER_TAP,
+        THREE_FINGER_TAP,
+        TWO_FINGER_DOUBLE_TAP,
+        TWO_FINGER_SWIPE_UP,
+        TWO_FINGER_SWIPE_DOWN,
+        TWO_FINGER_SWIPE_RIGHT,
+        TWO_FINGER_SWIPE_LEFT,
+        PINCH_IN,
+        PINCH_OUT,
+        SWIPE_UP_DOWN,
+        SWIPE_DOWN_UP,
+        SWIPE_LEFT_RIGHT,
+        SWIPE_RIGHT_LEFT,
+        SWIPE_CIRCLE,
+        FOUR_FINGER_TAP,
+        FOUR_FINGER_DOUBLE_TAP
     }
 
     private static final int SWIPE_THRESHOLD = 500;
     private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-
+    private GestureListener listener;
     private GestureDetector gestureDetector;
+    private HashMap<GestureAction, Runnable> gestureActions;
     private GestureCallback callback;
     private final Handler handler = new Handler();
     private int numberOfTaps = 0;
@@ -32,9 +53,13 @@ public class GestureListener extends GestureDetector.SimpleOnGestureListener imp
     private float tapTimeoutMultiplier = 1.0f;
     private boolean manageInActionDown = false;
 
-    public GestureListener(View view, GestureCallback callback) {
-        this.callback = callback;
-        gestureDetector = new GestureDetector(view.getContext(), this);
+    private Context context; // Add a field to store the Context
+    public void setGestureActionListeners(HashMap<GestureAction, Runnable> gestureActionMap) {
+        this.gestureActions = gestureActionMap;
+    }
+    public GestureListener(Context context) {
+        this.context = context; // Save the Context
+        gestureDetector = new GestureDetector(context, this);
     }
 
     public interface GestureCallback {
