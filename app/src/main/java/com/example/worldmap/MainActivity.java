@@ -1,6 +1,7 @@
 package com.example.worldmap;
 
-//import com.example.worldmap.AccessibilityStateManager;
+
+import android.os.Looper;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -47,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
 
     Region region = new Region();
 
-    AccessibilityManager accessibilityManager;
     private static AccessibilityUtils accessibilityUtils = new AccessibilityUtils();
     private final Handler handler = new Handler();
 
@@ -75,9 +75,8 @@ public class MainActivity extends AppCompatActivity {
             AccessibilityUtils.redirectToAccessibilitySettings(getApplicationContext());
         }
         setupWebView();
-
+        setupWebViewClient();
         Log.e(TAG, "Test:  onCreate....");
-        setupWebView();
 
 
         setupTouchListeners();
@@ -89,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
     public static MainActivity getInstance() {
         return instance;
     }
+
+
 
     public static void updateWindowState(String windowTitle, String packageName) {
         // Perform the necessary actions with the window state data
@@ -114,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebChromeClient(new webViewChromeClient(this));
     }
 
+
     private void setupWebViewClient() {
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -123,8 +125,26 @@ public class MainActivity extends AppCompatActivity {
                 isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
                 if (!AccessibilityUtils.isMapAccessibilityServiceRunning(getApplicationContext()) && isSystemExploreByTouchEnabled) {
                     AccessibilityUtils.redirectToAccessibilitySettings(getApplicationContext());
-                    //Inject Javascript to monitor disclaimer visibility
                 }
+                //Injected Javascript to monitor disclaimer visibility
+                webView.evaluateJavascript(
+                        "(function() {" +
+                                "let maxAttempts = 50;" +
+                                "let interval = setInterval(() => {" +
+                                "let btn = document.getElementById('close-button');" +
+                                "if (btn) {" +
+                                "btn.click();" +
+                                "clearInterval(interval);" +
+                                "console.log('[Disclaimer] Close button clicked');" +
+                                "} else if (--maxAttempts <= 0) {" +
+                                "clearInterval(interval);" +
+                                "console.log('[Disclaimer] Close button not found');" +
+                                "}" +
+                                "}, 100);" +
+                                "})();",
+                        value->Log.e("Descmailmer","Desclaimer Closed")
+                );
+
             }
         });
     }
@@ -145,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
 
     private void handleTouchExplorationEnabled() {
         isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
@@ -204,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
 
 
     private void setAccessibility() {
@@ -303,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
         String jsCode = "javascript:(function() { " +
                 "document.getElementById('help-btn').removeEventListener('click', window.disableClick, true); " +
                 "document.getElementById('search-input').removeEventListener('click', window.disableClick, true); " +
-                "document.getElementById('searchbutton').removeEventListener('click', window.disableClick, true); " +
+                "document.getElementById('search-button').removeEventListener('click', window.disableClick, true); " +
                 "document.getElementById('fas fa-directions').removeEventListener('click', window.disableClick, true); " +
                 "document.querySelector('#controls-box').removeEventListener('click', window.disableClick, true); " +
                 "document.querySelector('a[href=\"https://leafletjs.com\"]').removeEventListener('click', window.disableClick, true); " +

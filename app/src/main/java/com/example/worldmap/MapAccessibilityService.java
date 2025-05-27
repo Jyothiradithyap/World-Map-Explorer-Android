@@ -22,6 +22,8 @@ public class MapAccessibilityService extends AccessibilityService {
         }
     }
 
+
+
     @Override
     public void onInterrupt() {
         // This method is called when the service is interrupted
