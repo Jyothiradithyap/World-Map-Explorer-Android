@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Toast backToast; // To display the warning notification
 
-    private WebView myWeb;
+    private WebView webView;
     private TextToSpeech textToSpeech;
     GestureListener gestureListener;
 
@@ -105,17 +105,17 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     private void setupWebView() {
-        myWeb = findViewById(R.id.myWeb);
-        myWeb.setWebViewClient(new WebViewClient());
-        myWeb.getSettings().setJavaScriptEnabled(true);
-        //myWeb.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 14; Android-Accessible-Bluff)");
-        myWeb.getSettings().setMediaPlaybackRequiresUserGesture(false);
-        myWeb.loadUrl("https://map.zendalona.com/");
-        myWeb.setWebChromeClient(new MyWebChromeClient(this));
+        webView = findViewById(R.id.myWeb);
+        webView.setWebViewClient(new WebViewClient());
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 14; Android-Accessible-Bluff)");
+        webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        webView.loadUrl("https://map.zendalona.com/");
+        webView.setWebChromeClient(new webViewChromeClient(this));
     }
 
     private void setupWebViewClient() {
-        myWeb.setWebViewClient(new WebViewClient() {
+        webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -156,57 +156,39 @@ public class MainActivity extends AppCompatActivity {
     private void handleTouchExplorationDisabled() {
         // Switch to Normal Mode: Revert the game UI and controls to the regular mode
         Log.d(TAG, "Switching to Normal Mode...");
-        myWeb.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
+        webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
         //enableClickEvent();
-        myWeb.setOnTouchListener(null);
+        webView.setOnTouchListener(null);
     }
 
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupTouchListeners() {
+
         HashMap<GestureListener.GestureAction, Runnable> gestureActionMap = new HashMap<>();
         gestureActionMap.put(GestureListener.GestureAction.SINGLE_TAP, this::dummyFunforSingleTap);
-        // gestureActionMap.put(GestureListener.GestureAction.SWIPE_UP,)
+
+        //gestureActionMap.put(GestureListener.GestureAction.DOUBLE_TAP, this::moveCursorUp);
+        gestureActionMap.put(GestureListener.GestureAction.SWIPE_UP, this::moveCursorUp);
+        gestureActionMap.put(GestureListener.GestureAction.SWIPE_DOWN, this::moveCursorDown);
+        //gestureActionMap.put(GestureListener.GestureAction.SWIPE_LEFT, this::announceLastGamePlayed);
+        //gestureActionMap.put(GestureListener.GestureAction.SWIPE_RIGHT, this::sendVoiceRecording);
+
 
         gestureListener = new GestureListener(getApplicationContext());
         gestureListener.setGestureActionListeners(gestureActionMap);
-    }
-
-    private void dummyFunforSingleTap() {
 
     }
-/*    private void handleGestureAction(GestureListener.GestureAction action) {
-        switch (action) {
-            case SWIPE_LEFT:
-                speak("Swiping left");
-                break;
-            case SWIPE_RIGHT:
-                speak("Swiping right");
-                break;
-            case SWIPE_UP:
-                speak("Swiping up");
-                break;
-            case SWIPE_DOWN:
-                speak("Swiping down");
-                break;
-            case DOUBLE_TAP:
-                speak("Double tapping");
-                break;
-            case TRIPLE_TAP:
-                speak("Triple tapping");
-                break;
-            case LONG_PRESS:
-                speak("Long press detected");
-                break;
-        }
-    }       */
+    private void dummyFunforSingleTap(){
+
+    }
 
 
-    private class MyWebChromeClient extends WebChromeClient {
+    private class webViewChromeClient extends WebChromeClient {
 
         private final Activity activity;
 
-        public MyWebChromeClient(Activity activity) {
+        public webViewChromeClient(Activity activity) {
             this.activity = activity;
         }
 
@@ -229,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             // Determine if TalkBack or another accessibility service is enabled
             isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
             // Retrieve the current URL from the WebView history
-            WebBackForwardList webBackForwardList = myWeb.copyBackForwardList();
+            WebBackForwardList webBackForwardList = webView.copyBackForwardList();
             currentUrl = webBackForwardList.getItemAtIndex(webBackForwardList.getCurrentIndex()).getTitle();
             Log.e(TAG, "Current URL: " + currentUrl);
             Log.e("AAAAsetAccessibility", "setAccessibility" + currentUrl);
@@ -239,21 +221,21 @@ public class MainActivity extends AppCompatActivity {
             // Update the JavaScript context and adjust touch exploration based on URL and TalkBack status
             if (isSystemExploreByTouchEnabled) {
                 if (currentUrl.contains("map")) {
-                    myWeb.evaluateJavascript("var isAndroidScreenReaderOn = true;", null);
+                    webView.evaluateJavascript("var isAndroidScreenReaderOn = true;", null);
                     disableExploreByTouch();
-                    myWeb.setOnTouchListener(gestureListener);
+                    webView.setOnTouchListener(gestureListener);
                     disableClickEvent();
                     hideSystemUI();
 
                 } else {
-                    myWeb.setOnTouchListener(null);
+                    webView.setOnTouchListener(null);
                     enableExploreByTouch();
                     enableClickEvent();
                     showSystemUI();
                 }
             } else {
-                myWeb.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
-                myWeb.setOnTouchListener(null);
+                webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
+                webView.setOnTouchListener(null);
                 enableClickEvent();
                 showSystemUI();
             }
@@ -328,7 +310,7 @@ public class MainActivity extends AppCompatActivity {
                 "document.querySelector('a[href=\"https://openstreetmap.org/copyright\"]').removeEventListener('click', window.disableClick, true); " +
                 "window.disableClick = disableClick; " +
                 "})()";
-        myWeb.evaluateJavascript(jsCode, null);
+        webView.evaluateJavascript(jsCode, null);
         Log.e(TAG, "EnableClickEvent: " );
     }
 
@@ -382,4 +364,58 @@ public class MainActivity extends AppCompatActivity {
         }
         super.onDestroy();
     }
+    // Inject JavaScript to simulate "ArrowUp" key press
+    private void moveCursorUp() {
+        String jsCode = "javascript:(function() {" +
+                "  const event = { key: 'ArrowUp', code: 'ArrowUp', shiftKey: false };" +
+                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
+                "    currentMarker.InboundMarkerMove(event);" +
+                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
+                "    currentMarker.markerMove(event);" +
+                "  }" +
+                "})();";
+        webView.evaluateJavascript(jsCode, null);
+    }
+
+    private void moveCursorDown() {
+        String jsCode = "javascript:(function() {" +
+                "  const event = { key: 'ArrowDown', code: 'ArrowDown', shiftKey: false };" +
+                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
+                "    currentMarker.InboundMarkerMove(event);" +
+                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
+                "    currentMarker.markerMove(event);" +
+                "  }" +
+                "})();";
+        webView.evaluateJavascript(jsCode, null);
+    }
+
+    private void moveCursorLeft() {
+        String jsCode = "javascript:(function() {" +
+                " const event = { key: 'ArrowLeft', code: 'ArrowLeft', shiftKey: false}" +
+                " if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
+                "   currentMarker.InboundMarkerMove(event);" +
+                " } else if (typeof currentMarker?.markerMove === 'function') {" +
+                "      currentMarker.markerMove(event);" +
+                " }" +
+                "})()";
+    }
+
+    private void moveCursorRight() {
+        String jsCode = "javascript:(function() {" +
+                "  const event = { key: 'ArrowRight', code: 'ArrowRight', shiftKey: false };" +
+                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
+                "    currentMarker.InboundMarkerMove(event);" +
+                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
+                "    currentMarker.markerMove(event);" +
+                "  }" +
+                "})();";
+        webView.evaluateJavascript(jsCode, null);
+    }
+
+
+
+
+
+
+
 }
