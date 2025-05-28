@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.view.Display;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.webkit.JsResult;
 import android.webkit.PermissionRequest;
@@ -49,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
     Region region = new Region();
 
     private static AccessibilityUtils accessibilityUtils = new AccessibilityUtils();
-    private final Handler handler = new Handler();
 
     private Toast backToast; // To display the warning notification
 
@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         appAccessibilityService = myAccessibilityService;
     }
 
-
+    @SuppressLint("JavascriptInterface")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,11 +71,11 @@ public class MainActivity extends AppCompatActivity {
         instance = this;//hh
 //If explore by touch is on and our accessibility service is not running, redirect to settings
         isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
+        setupWebView();
+        setupWebViewClient();
         if (!AccessibilityUtils.isMapAccessibilityServiceRunning(getApplicationContext()) && isSystemExploreByTouchEnabled) {
             AccessibilityUtils.redirectToAccessibilitySettings(getApplicationContext());
         }
-        setupWebView();
-        setupWebViewClient();
         Log.e(TAG, "Test:  onCreate....");
 
 
@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.myWeb);
         webView.setWebViewClient(new WebViewClient());
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 14; Android-Accessible-Bluff)");
+        webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 14;WME-ANDROID)");
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         webView.loadUrl("https://map.zendalona.com/");
         webView.setWebChromeClient(new webViewChromeClient(this));
@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleTouchExplorationDisabled() {
-        // Switch to Normal Mode: Revert the game UI and controls to the regular mode
+        // Switch to Normal Mode: Revert the UI and controls to the regular mode
         Log.d(TAG, "Switching to Normal Mode...");
         webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
         //enableClickEvent();
@@ -226,6 +226,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void handleWebPageLoad() {
+        setAccessibility();
+        clickEventListener();
+
+    }
 
 
     private void setAccessibility() {
@@ -238,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Current URL: " + currentUrl);
             Log.e("AAAAsetAccessibility", "setAccessibility" + currentUrl);
 
-//            webView.setOnTouchListener(null);
+            webView.setOnTouchListener(null);
 
             // Update the JavaScript context and adjust touch exploration based on URL and TalkBack status
             if (isSystemExploreByTouchEnabled) {
@@ -373,19 +378,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void speak(String text) {
-        if (textToSpeech != null && !textToSpeech.isSpeaking()) {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+    protected void onPause() {
+        super.onPause();
+        Log.e(TAG, "onPause: ");
+        Log.e(TAG, "Test:  onPause....");
+
+        // If TalkBack is enabled, disable explore by touch
+        if (isSystemExploreByTouchEnabled) {
+            enableExploreByTouch();
         }
+//        // Enable click events on the WebView
+        enableClickEvent();
+        // Allow the screen to turn off again
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
-    protected void onDestroy() {
-        if (textToSpeech != null) {
-            textToSpeech.shutdown();
-        }
-        super.onDestroy();
+    protected void onStop() {
+        super.onStop();
+        Log.e(TAG, "Test:  onStop....");
     }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.e(TAG, "Test:  onRestart....");
+    }
+
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.e(TAG, "Test:  onDestroy....");
+    }
+
+
+
     // Inject JavaScript to simulate "ArrowUp" key press
     private void moveCursorUp() {
         String jsCode = "javascript:(function() {" +
