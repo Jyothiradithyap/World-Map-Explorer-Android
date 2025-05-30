@@ -1,6 +1,5 @@
 package com.example.worldmap;
 
-
 import android.os.Looper;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -39,7 +38,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static MainActivity instance; // Static reference to the MainActivity instance hhh
+    private static MainActivity instance; // Static reference to the MainActivity instance
     private String TAG = MainActivity.class.getSimpleName();
     String currentUrl;
     //  Variable to check if explorebytouch is enabled
@@ -57,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     private TextToSpeech textToSpeech;
     GestureListener gestureListener;
 
-
     //Set up our own accessibility service
     public static void set_accessibility_service(MapAccessibilityService myAccessibilityService) {
         appAccessibilityService = myAccessibilityService;
@@ -68,41 +66,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        instance = this;//hh
-//If explore by touch is on and our accessibility service is not running, redirect to settings
+        instance = this;
+
+        //If explore by touch is on and our accessibility service is not running, redirect to settings
         isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
         setupWebView();
         setupWebViewClient();
+
         if (!AccessibilityUtils.isMapAccessibilityServiceRunning(getApplicationContext()) && isSystemExploreByTouchEnabled) {
             AccessibilityUtils.redirectToAccessibilitySettings(getApplicationContext());
         }
         Log.e(TAG, "Test:  onCreate....");
 
-
         setupTouchListeners();
         // Start monitoring accessibility changes
         monitorAccessibilityChanges();
-
     }
 
     public static MainActivity getInstance() {
         return instance;
     }
 
-
-
     public static void updateWindowState(String windowTitle, String packageName) {
         // Perform the necessary actions with the window state data
         Log.d("MainActivity0", "Window state changed - Title: " + windowTitle + ", Package: " + packageName);
         MainActivity activityInstance = MainActivity.getInstance();
         if (activityInstance != null) { // Ensure the instance is not null
-            Log.e("MainActivity1", "MainActivity1 instance is null!");
+            Log.e("MainActivity1", "MainActivity1 instance is not null!");
             activityInstance.setAccessibility();
         } else {
             Log.e("MainActivity3", "MainActivity3 instance is null!");
         }
     }
-
 
     @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     private void setupWebView() {
@@ -111,10 +106,9 @@ public class MainActivity extends AppCompatActivity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 14;WME-ANDROID)");
         webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
-        webView.loadUrl("https://map.zendalona.com/");
+        webView.loadUrl("https://test.zendalona.com/");
         webView.setWebChromeClient(new webViewChromeClient(this));
     }
-
 
     private void setupWebViewClient() {
         webView.setWebViewClient(new WebViewClient() {
@@ -122,50 +116,32 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 Log.e(TAG, "onPageFinished: " + url);
+                handleWebPageLoad();
                 isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
                 if (!AccessibilityUtils.isMapAccessibilityServiceRunning(getApplicationContext()) && isSystemExploreByTouchEnabled) {
                     AccessibilityUtils.redirectToAccessibilitySettings(getApplicationContext());
                 }
-                //Injected Javascript to monitor disclaimer visibility
-                webView.evaluateJavascript(
-                        "(function() {" +
-                                "let maxAttempts = 50;" +
-                                "let interval = setInterval(() => {" +
-                                "let btn = document.getElementById('close-button');" +
-                                "if (btn) {" +
-                                "btn.click();" +
-                                "clearInterval(interval);" +
-                                "console.log('[Disclaimer] Close button clicked');" +
-                                "} else if (--maxAttempts <= 0) {" +
-                                "clearInterval(interval);" +
-                                "console.log('[Disclaimer] Close button not found');" +
-                                "}" +
-                                "}, 100);" +
-                                "})();",
-                        value->Log.e("Descmailmer","Desclaimer Closed")
-                );
-
             }
         });
     }
-
 
     private void monitorAccessibilityChanges() {
         AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
-        accessibilityManager.addTouchExplorationStateChangeListener(new AccessibilityManager.TouchExplorationStateChangeListener() {
-            @Override
-            public void onTouchExplorationStateChanged(boolean enabled) {
-                if (enabled) {
-                    Log.d(TAG, "Touch exploration is enabled (TalkBack is ON)");
-                    handleTouchExplorationEnabled();
-                } else {
-                    Log.d(TAG, "Touch exploration is disabled (TalkBack is OFF)");
-                    handleTouchExplorationDisabled();
+        if (accessibilityManager != null) {
+            accessibilityManager.addTouchExplorationStateChangeListener(new AccessibilityManager.TouchExplorationStateChangeListener() {
+                @Override
+                public void onTouchExplorationStateChanged(boolean enabled) {
+                    if (enabled) {
+                        Log.d(TAG, "Touch exploration is enabled (TalkBack is ON)");
+                        handleTouchExplorationEnabled();
+                    } else {
+                        Log.d(TAG, "Touch exploration is disabled (TalkBack is OFF)");
+                        handleTouchExplorationDisabled();
+                    }
                 }
-            }
-        });
+            });
+        }
     }
-
 
     private void handleTouchExplorationEnabled() {
         isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
@@ -177,42 +153,42 @@ public class MainActivity extends AppCompatActivity {
     private void handleTouchExplorationDisabled() {
         // Switch to Normal Mode: Revert the UI and controls to the regular mode
         Log.d(TAG, "Switching to Normal Mode...");
-        webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
-        //enableClickEvent();
-        webView.setOnTouchListener(null);
+        if (webView != null) {
+            webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
+            webView.setOnTouchListener(null);
+        }
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupTouchListeners() {
+        try {
+            HashMap<GestureListener.GestureAction, Runnable> gestureActionMap = new HashMap<>();
+            gestureActionMap.put(GestureListener.GestureAction.SINGLE_TAP, this::dummyFunforSingleTap);
+            gestureActionMap.put(GestureListener.GestureAction.SCROLL_UP, this::moveCursorUp);
+            gestureActionMap.put(GestureListener.GestureAction.SCROLL_DOWN, this::moveCursorDown);
+            gestureActionMap.put(GestureListener.GestureAction.SCROLL_LEFT, this::moveCursorLeft);
+            gestureActionMap.put(GestureListener.GestureAction.SCROLL_RIGHT, this::moveCursorRight);
+            gestureActionMap.put(GestureListener.GestureAction.DOUBLE_TAP, this::announceCurrentLocation);
 
-        HashMap<GestureListener.GestureAction, Runnable> gestureActionMap = new HashMap<>();
-        gestureActionMap.put(GestureListener.GestureAction.SINGLE_TAP, this::dummyFunforSingleTap);
+            gestureListener = new GestureListener(getApplicationContext());
+            gestureListener.setGestureActionListeners(gestureActionMap);
 
-        //gestureActionMap.put(GestureListener.GestureAction.DOUBLE_TAP, this::moveCursorUp);
-        gestureActionMap.put(GestureListener.GestureAction.SWIPE_UP, this::moveCursorUp);
-        gestureActionMap.put(GestureListener.GestureAction.SWIPE_DOWN, this::moveCursorDown);
-        //gestureActionMap.put(GestureListener.GestureAction.SWIPE_LEFT, this::announceLastGamePlayed);
-        //gestureActionMap.put(GestureListener.GestureAction.SWIPE_RIGHT, this::sendVoiceRecording);
-
-
-        gestureListener = new GestureListener(getApplicationContext());
-        gestureListener.setGestureActionListeners(gestureActionMap);
-
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up touch listeners: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-    private void dummyFunforSingleTap(){
 
+    private void dummyFunforSingleTap() {
+        Log.d(TAG, "Single tap detected");
     }
-
 
     private class webViewChromeClient extends WebChromeClient {
-
         private final Activity activity;
 
         public webViewChromeClient(Activity activity) {
             this.activity = activity;
         }
-
 
         @Override
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
@@ -223,174 +199,251 @@ public class MainActivity extends AppCompatActivity {
                     .show();
             return true;
         }
-
     }
 
     private void handleWebPageLoad() {
+        Log.d("handleWebPageLoad", "handleWebPageLoad ");
         setAccessibility();
         clickEventListener();
-
     }
-
 
     private void setAccessibility() {
         try {
             // Determine if TalkBack or another accessibility service is enabled
             isSystemExploreByTouchEnabled = accessibilityUtils.isSystemExploreByTouchEnabled(getApplicationContext());
-            // Retrieve the current URL from the WebView history
-            WebBackForwardList webBackForwardList = webView.copyBackForwardList();
-            currentUrl = webBackForwardList.getItemAtIndex(webBackForwardList.getCurrentIndex()).getTitle();
-            Log.e(TAG, "Current URL: " + currentUrl);
-            Log.e("AAAAsetAccessibility", "setAccessibility" + currentUrl);
 
-            webView.setOnTouchListener(null);
+            // Safely get current URL
+            if (webView != null) {
+                webView.setOnTouchListener(null);
 
-            // Update the JavaScript context and adjust touch exploration based on URL and TalkBack status
-            if (isSystemExploreByTouchEnabled) {
-                if (currentUrl.contains("map")) {
+                if (isSystemExploreByTouchEnabled) {
                     webView.evaluateJavascript("var isAndroidScreenReaderOn = true;", null);
                     disableExploreByTouch();
                     webView.setOnTouchListener(gestureListener);
                     disableClickEvent();
-                    hideSystemUI();
+
+                    // 🔒 Disable default map gestures
+                    String jsDisableMapGestures =
+                            "javascript:(function() {" +
+                                    "  try {" +
+                                    "    if (window.map && typeof window.map.dragging !== 'undefined') window.map.dragging.disable();" +
+                                    "    if (window.map && typeof window.map.touchZoom !== 'undefined') window.map.touchZoom.disable();" +
+                                    "    if (window.map && typeof window.map.scrollWheelZoom !== 'undefined') window.map.scrollWheelZoom.disable();" +
+                                    "    if (window.map && typeof window.map.doubleClickZoom !== 'undefined') window.map.doubleClickZoom.disable();" +
+                                    "    if (window.map && typeof window.map.boxZoom !== 'undefined') window.map.boxZoom.disable();" +
+                                    "    if (window.map && typeof window.map.keyboard !== 'undefined') window.map.keyboard.disable();" +
+                                    "    console.log('Map normal gestures disabled');" +
+                                    "  } catch (e) { console.log('Error disabling map gestures: ' + e); }" +
+                                    "})();";
+                    webView.evaluateJavascript(jsDisableMapGestures, null);
 
                 } else {
+                    webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
                     webView.setOnTouchListener(null);
-                    enableExploreByTouch();
                     enableClickEvent();
-                    showSystemUI();
+
+                    // ✅ Re-enable map gestures when TalkBack is OFF
+                    String jsEnableMapGestures =
+                            "javascript:(function() {" +
+                                    "  try {" +
+                                    "    if (window.map && typeof window.map.dragging !== 'undefined') window.map.dragging.enable();" +
+                                    "    if (window.map && typeof window.map.touchZoom !== 'undefined') window.map.touchZoom.enable();" +
+                                    "    if (window.map && typeof window.map.scrollWheelZoom !== 'undefined') window.map.scrollWheelZoom.enable();" +
+                                    "    if (window.map && typeof window.map.doubleClickZoom !== 'undefined') window.map.doubleClickZoom.enable();" +
+                                    "    if (window.map && typeof window.map.boxZoom !== 'undefined') window.map.boxZoom.enable();" +
+                                    "    if (window.map && typeof window.map.keyboard !== 'undefined') window.map.keyboard.enable();" +
+                                    "    console.log('Map gestures re-enabled');" +
+                                    "  } catch (e) { console.log('Error enabling map gestures: ' + e); }" +
+                                    "})();";
+                    webView.evaluateJavascript(jsEnableMapGestures, null);
                 }
-            } else {
-                webView.evaluateJavascript("var isAndroidScreenReaderOn = false;", null);
-                webView.setOnTouchListener(null);
-                enableClickEvent();
-                showSystemUI();
             }
 
         } catch (Exception e) {
+            Log.e(TAG, "Error in setAccessibility: " + e.getMessage());
             e.printStackTrace();
         }
-
     }
+
 
 
     private void enableExploreByTouch() {
         try {
             // Check if the Android version is R (API 30) or higher
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && appAccessibilityService != null) {
                 // Clear the touch exploration and gesture detection region
                 region.setEmpty();
                 appAccessibilityService.setTouchExplorationPassthroughRegion(Display.DEFAULT_DISPLAY, region);
                 appAccessibilityService.setGestureDetectionPassthroughRegion(Display.DEFAULT_DISPLAY, region);
-                Log.e(TAG, "Explore by Touch: false");
+                Log.e(TAG, "Explore by Touch: enabled");
             }
         } catch (Exception e) {
+            Log.e(TAG, "Error enabling explore by touch: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
 
     private void disableExploreByTouch() {
         try {
             // Check if the Android version is R (API 30) or higher
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && appAccessibilityService != null) {
                 // Set the touch exploration and gesture detection regions to cover the full screen
-                appAccessibilityService.setTouchExplorationPassthroughRegion(Display.DEFAULT_DISPLAY, getRegionOfFullScreen(getApplicationContext()));
-                appAccessibilityService.setGestureDetectionPassthroughRegion(Display.DEFAULT_DISPLAY, getRegionOfFullScreen(getApplicationContext()));
-                Log.e(TAG, "Explore by Touch disabled");
+                Region fullScreenRegion = getRegionOfFullScreen(getApplicationContext());
+                if (fullScreenRegion != null && !fullScreenRegion.isEmpty()) {
+                    appAccessibilityService.setTouchExplorationPassthroughRegion(Display.DEFAULT_DISPLAY, fullScreenRegion);
+                    appAccessibilityService.setGestureDetectionPassthroughRegion(Display.DEFAULT_DISPLAY, fullScreenRegion);
+                    Log.e(TAG, "Explore by Touch disabled");
+                }
             }
-
         } catch (Exception e) {
+            Log.e(TAG, "Error disabling explore by touch: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-
     private void disableClickEvent() {
-        //Todo Write the javascript code to disable the search bar and all the buttons
-        String jsCode = "javascript:(function() { " +
-                "function disableClick(event) {" +
-                "    event.preventDefault();" +
-                "    event.stopPropagation();" +
-                "}" +
-                "document.getElementById('help-btn').addEventListener('click', enableClick, true); " +
-                "document.getElementById('search-input').addEventListener('click', enableClick, true); " +
-                "document.getElementById('searchbutton').addEventListener('click', enableClick, true); " +
-                "document.getElementById('fas fa-directions').addEventListener('click', enableClick, true); " +
-                "document.querySelector('#controls-box').addEventListener('click', enableClick, true); " +
-                "document.querySelector('a[href=\\\"https://leafletjs.com\\\"]').addEventListener('click', enableClick, true); " +
-                "document.querySelector('a[href=\\\"https://openstreetmap.org/copyright\\\"]').addEventListener('click', enableClick, true); " +
-                "window.enableClick = enableClick; " +
-                "})()";
-    }
+        try {
+            String jsCode = "javascript:(function() { " +
+                    "function disableClick(event) {" +
+                    "    event.preventDefault();" +
+                    "    event.stopPropagation();" +
+                    "}" +
+                    "var elements = [" +
+                    "    'help-btn'," +
+                    "    'search-input'," +
+                    "    'searchbutton'" +
+                    "];" +
+                    "elements.forEach(function(id) {" +
+                    "    var element = document.getElementById(id);" +
+                    "    if (element) {" +
+                    "        element.addEventListener('click', disableClick, true);" +
+                    "    }" +
+                    "});" +
+                    "var controlsBox = document.querySelector('#controls-box');" +
+                    "if (controlsBox) controlsBox.addEventListener('click', disableClick, true);" +
+                    "var leafletLink = document.querySelector('a[href=\"https://leafletjs.com\"]');" +
+                    "if (leafletLink) leafletLink.addEventListener('click', disableClick, true);" +
+                    "var osmLink = document.querySelector('a[href=\"https://openstreetmap.org/copyright\"]');" +
+                    "if (osmLink) osmLink.addEventListener('click', disableClick, true);" +
+                    "window.disableClick = disableClick; " +
+                    "})()";
 
+            if (webView != null) {
+                webView.evaluateJavascript(jsCode, null);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error disabling click events: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     private void enableClickEvent() {
-        //Todo write the javascript code to enable the search bar and all the buttons.
-        String jsCode = "javascript:(function() { " +
-                "document.getElementById('help-btn').removeEventListener('click', window.disableClick, true); " +
-                "document.getElementById('search-input').removeEventListener('click', window.disableClick, true); " +
-                "document.getElementById('search-button').removeEventListener('click', window.disableClick, true); " +
-                "document.getElementById('fas fa-directions').removeEventListener('click', window.disableClick, true); " +
-                "document.querySelector('#controls-box').removeEventListener('click', window.disableClick, true); " +
-                "document.querySelector('a[href=\"https://leafletjs.com\"]').removeEventListener('click', window.disableClick, true); " +
-                "document.querySelector('a[href=\"https://openstreetmap.org/copyright\"]').removeEventListener('click', window.disableClick, true); " +
-                "window.disableClick = disableClick; " +
-                "})()";
-        webView.evaluateJavascript(jsCode, null);
-        Log.e(TAG, "EnableClickEvent: " );
+        try {
+            String jsCode = "javascript:(function() { " +
+                    "if (typeof window.disableClick === 'function') {" +
+                    "    var elements = [" +
+                    "        'help-btn'," +
+                    "        'search-input'," +
+                    "        'searchbutton'" +
+                    "    ];" +
+                    "    elements.forEach(function(id) {" +
+                    "        var element = document.getElementById(id);" +
+                    "        if (element) {" +
+                    "            element.removeEventListener('click', window.disableClick, true);" +
+                    "        }" +
+                    "    });" +
+                    "    var controlsBox = document.querySelector('#controls-box');" +
+                    "    if (controlsBox) controlsBox.removeEventListener('click', window.disableClick, true);" +
+                    "    var leafletLink = document.querySelector('a[href=\"https://leafletjs.com\"]');" +
+                    "    if (leafletLink) leafletLink.removeEventListener('click', window.disableClick, true);" +
+                    "    var osmLink = document.querySelector('a[href=\"https://openstreetmap.org/copyright\"]');" +
+                    "    if (osmLink) osmLink.removeEventListener('click', window.disableClick, true);" +
+                    "}" +
+                    "})()";
+
+            if (webView != null) {
+                webView.evaluateJavascript(jsCode, null);
+                Log.e(TAG, "EnableClickEvent executed");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error enabling click events: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
+    private void clickEventListener() {
+        try {
+            if (webView == null) {
+                Log.e(TAG, "WebView is null. Cannot set up click event listener.");
+                return;
+            }
 
-    private void hideSystemUI() {
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        );
+            String javascript = "javascript:(function() {" +
+                    "    if (!document.body.hasAttribute('click-listener-added')) {" +
+                    "        document.body.addEventListener('click', function(event) {" +
+                    "            var element = event.target;" +
+                    "            var elementId = element.id;" +
+                    "            if (elementId && typeof Android !== 'undefined' && Android.onElementClicked) {" +
+                    "                Android.onElementClicked(elementId);" +
+                    "            }" +
+                    "        }, false);" +
+                    "        document.body.setAttribute('click-listener-added', 'true');" +
+                    "    }" +
+                    "})()";
+
+            webView.evaluateJavascript(javascript, null);
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up click event listener: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-
-    private void showSystemUI() {
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        );
-    }
-
 
     private Region getRegionOfFullScreen(Context context) {
-        DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
-        if (displayManager == null) {
-            return new Region(); // Return an empty region if DisplayManager is not available
-        }
-        Display display = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-        if (display == null) {
-            return new Region(); // Return an empty region if the display is not available
-        }
+        try {
+            DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+            if (displayManager == null) {
+                Log.e(TAG, "DisplayManager is null");
+                return new Region(); // Return an empty region if DisplayManager is not available
+            }
 
-        DisplayMetrics metrics = new DisplayMetrics();
-        display.getRealMetrics(metrics);
+            Display display = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+            if (display == null) {
+                Log.e(TAG, "Display is null");
+                return new Region(); // Return an empty region if the display is not available
+            }
 
-        return new Region(0, 0, metrics.widthPixels, metrics.heightPixels);
+            DisplayMetrics metrics = new DisplayMetrics();
+            display.getRealMetrics(metrics);
+
+            return new Region(0, 0, metrics.widthPixels, metrics.heightPixels);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting full screen region: " + e.getMessage());
+            e.printStackTrace();
+            return new Region();
+        }
     }
 
-
+    @Override
     protected void onPause() {
         super.onPause();
         Log.e(TAG, "onPause: ");
         Log.e(TAG, "Test:  onPause....");
 
-        // If TalkBack is enabled, disable explore by touch
-        if (isSystemExploreByTouchEnabled) {
-            enableExploreByTouch();
+        try {
+            // If TalkBack is enabled, enable explore by touch
+            if (isSystemExploreByTouchEnabled) {
+                enableExploreByTouch();
+            }
+
+            // Enable click events on the WebView
+            enableClickEvent();
+
+            // Allow the screen to turn off again
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onPause: " + e.getMessage());
+            e.printStackTrace();
         }
-//        // Enable click events on the WebView
-        enableClickEvent();
-        // Allow the screen to turn off again
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
@@ -405,68 +458,86 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "Test:  onRestart....");
     }
 
-
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         Log.e(TAG, "Test:  onDestroy....");
+
+        // Clean up
+        if (webView != null) {
+            webView.setOnTouchListener(null);
+        }
+        gestureListener = null;
+        instance = null;
     }
 
-
-
     // Inject JavaScript to simulate "ArrowUp" key press
+    private void moveCursor(String direction) {
+        try {
+            String jsCode = "javascript:(function() {" +
+                    "  try {" +
+                    "    const event = new KeyboardEvent('keydown', {" +
+                    "      key: '" + direction + "'," +
+                    "      code: '" + direction + "'," +
+                    "      shiftKey: false," +
+                    "      bubbles: true," +
+                    "      cancelable: true" +
+                    "    });" +
+                    "    " +
+                    "    const container = document.querySelector('.leaflet-container');" +
+                    "    if (container) {" +
+                    "      container.dispatchEvent(event);" +
+                    "      return 'success';" +
+                    "    }" +
+                    "    return 'container_not_found';" +
+                    "  } catch(e) { " +
+                    "    return 'error: ' + e.message;" +
+                    "  }" +
+                    "})();";
+
+            if (webView != null) {
+                webView.evaluateJavascript(jsCode, value -> {
+                    if (value != null) {
+                        Log.d(TAG, "Move result: " + value);
+                        if (value.contains("container_not_found")) {
+                            Log.e(TAG, "Map container not found");
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in moveCursor: " + e.getMessage());
+        }
+    }
+
     private void moveCursorUp() {
-        String jsCode = "javascript:(function() {" +
-                "  const event = { key: 'ArrowUp', code: 'ArrowUp', shiftKey: false };" +
-                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
-                "    currentMarker.InboundMarkerMove(event);" +
-                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
-                "    currentMarker.markerMove(event);" +
-                "  }" +
-                "})();";
-        webView.evaluateJavascript(jsCode, null);
+        moveCursor("ArrowUp");
     }
 
     private void moveCursorDown() {
-        String jsCode = "javascript:(function() {" +
-                "  const event = { key: 'ArrowDown', code: 'ArrowDown', shiftKey: false };" +
-                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
-                "    currentMarker.InboundMarkerMove(event);" +
-                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
-                "    currentMarker.markerMove(event);" +
-                "  }" +
-                "})();";
-        webView.evaluateJavascript(jsCode, null);
+        moveCursor("ArrowDown");
     }
 
     private void moveCursorLeft() {
-        String jsCode = "javascript:(function() {" +
-                " const event = { key: 'ArrowLeft', code: 'ArrowLeft', shiftKey: false}" +
-                " if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
-                "   currentMarker.InboundMarkerMove(event);" +
-                " } else if (typeof currentMarker?.markerMove === 'function') {" +
-                "      currentMarker.markerMove(event);" +
-                " }" +
-                "})()";
+        moveCursor("ArrowLeft");
     }
 
     private void moveCursorRight() {
-        String jsCode = "javascript:(function() {" +
-                "  const event = { key: 'ArrowRight', code: 'ArrowRight', shiftKey: false };" +
-                "  if (typeof currentMarker?.InboundMarkerMove === 'function') {" +
-                "    currentMarker.InboundMarkerMove(event);" +
-                "  } else if (typeof currentMarker?.markerMove === 'function') {" +
-                "    currentMarker.markerMove(event);" +
-                "  }" +
-                "})();";
-        webView.evaluateJavascript(jsCode, null);
+        moveCursor("ArrowRight");
     }
 
-
-
-
-
+    private void announceCurrentLocation() {
+        Log.d(TAG, "Announcing current location");
+        String js = "const event = new KeyboardEvent('keydown', {" +
+                "key: 'F'," +
+                "code: 'KeyF'," +
+                "shiftKey: false," +  // Set to true if shift is needed
+                "bubbles: true," +
+                "cancelable: true" +
+                "});" +
+                "document.dispatchEvent(event);";
+            webView.evaluateJavascript(js, null);
+    }
 
 
 }
