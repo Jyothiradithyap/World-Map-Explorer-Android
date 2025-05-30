@@ -526,18 +526,47 @@ public class MainActivity extends AppCompatActivity {
         moveCursor("ArrowRight");
     }
 
-    private void announceCurrentLocation() {
-        Log.d(TAG, "Announcing current location");
-        String js = "const event = new KeyboardEvent('keydown', {" +
-                "key: 'F'," +
-                "code: 'KeyF'," +
-                "shiftKey: false," +  // Set to true if shift is needed
-                "bubbles: true," +
-                "cancelable: true" +
-                "});" +
-                "document.dispatchEvent(event);";
-            webView.evaluateJavascript(js, null);
+
+    public void announceCurrentLocation() {
+        String jsCode = "javascript:(function() {" +
+                "  try {" +
+                "    const event = new KeyboardEvent('keydown', {" +
+                "      key: 'f'," +
+                "      code: 'KeyF'," +
+                "      keyCode: 70," +
+                "      which: 70," +
+                "      shiftKey: false," +
+                "      bubbles: true," +
+                "      cancelable: true" +
+                "    });" +
+                "    const container = document.querySelector('.leaflet-container');" +
+                "    if (container) {" +
+                "      container.dispatchEvent(event);" +
+                "      return 'success';" +
+                "    }" +
+                "    return 'container_not_found';" +
+                "  } catch(e) { " +
+                "    return 'error: ' + e.message;" +
+                "  }" +
+                "})();";
+
+        if (webView != null) {
+            webView.evaluateJavascript(jsCode, value -> {
+                if (value != null) {
+                    Log.d("WebView", "Announce result: " + value);
+                    if (value.contains("container_not_found")) {
+                        Log.e("WebView", "Map container not found");
+                    } else if (value.contains("error")) {
+                        Log.e("WebView", "JS error occurred: " + value);
+                    }
+                }
+            });
+        }
     }
+
+
+
+
 
 
 }
